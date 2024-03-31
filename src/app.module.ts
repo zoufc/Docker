@@ -4,6 +4,8 @@ import { AppService } from './app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { UserModule } from './api/user/user.module';
+import { JwtModule } from '@nestjs/jwt';
+import { AuthModule } from './api/auth/auth.module';
 
 @Module({
   imports: [
@@ -19,6 +21,14 @@ import { UserModule } from './api/user/user.module';
             process.env.NODE_ENV === 'production'
               ? process.env.DB_PROD
               : process.env.DB_DEV,
+          privateKey:
+            process.env.NODE_ENV === 'production'
+              ? process.env.PRIVATE_KEY_PROD
+              : process.env.PRIVATE_KEY_DEV,
+          publicKey:
+            process.env.NODE_ENV === 'production'
+              ? process.env.PUBLIC_KEY_PROD
+              : process.env.PUBLIC_KEY_DEV,
         }),
       ],
     }),
@@ -28,7 +38,15 @@ import { UserModule } from './api/user/user.module';
       }),
       inject: [ConfigService],
     }),
+    JwtModule.register({
+      secret: process.env.PRIVATE_KEY_DEV,
+      signOptions: {
+        expiresIn: '1d',
+        algorithm: 'RS256',
+      },
+    }),
     UserModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],

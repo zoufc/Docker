@@ -12,6 +12,7 @@ import {
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { logger } from 'src/utils/logger/logger';
 
 @Controller('user')
 export class UserController {
@@ -20,9 +21,12 @@ export class UserController {
   @Post('create')
   async create(@Body() createUserDto: CreateUserDto, @Res() res) {
     try {
+      logger.info(`---USER.CONTROLLER.SERVICE INIT---`);
       const user = await this.userService.create(createUserDto);
+      logger.info(`---USER.CONTROLLER.SERVICE SUCCESS---`);
       return res.status(HttpStatus.OK).json(user);
     } catch (error) {
+      logger.error(`---USER.CONTROLLER.SERVICE ERROR ${error} ---`);
       return res.status(error.status).json(error);
     }
   }
