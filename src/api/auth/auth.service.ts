@@ -1,19 +1,44 @@
-import { HttpException, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { CreateAuthDto } from './dto/create-auth.dto';
 import { UpdateAuthDto } from './dto/update-auth.dto';
 import { Payload } from './payload';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { logger } from 'src/utils/logger/logger';
+import * as bcrypt from 'bcrypt';
+import { UserService } from '../user/user.service';
+import { User } from '../user/interfaces/user.interface';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private configService: ConfigService,
     private jwtService: JwtService,
+    private userService: UserService,
   ) {}
   create(createAuthDto: CreateAuthDto) {
     return 'This action adds a new auth';
+  }
+
+  async login(authDto: CreateAuthDto) {
+    try {
+      const user = await this.userService.findByEmail(authDto.email);
+      const isPasswordMatched = await bcrypt.compare(
+        authDto.password,
+        user.password,
+      );
+      if (!isPasswordMatched) {
+        throw new HttpException(
+          'Email or password invalid',
+          HttpStatus.UNAUTHORIZED,
+        );
+      }
+      const payload = { email: user.email };
+      const token = await this.signPayload(payload);
+      const sanitizedUser = await this.sanitizeUser(user);
+      return { sanitizedUser, token };
+    } catch (error) {
+      throw new HttpException(error.message, error.status);
+    }
   }
 
   async signPayload(payload: Payload) {
@@ -40,19 +65,25 @@ export class AuthService {
     }
   }
 
-  findAll() {
-    return `This action returns all auth`;
+  async sanitizeUser(user: User) {
+    try {
+      const sanitizeUser = {
+        firstname: user.firstname,
+        lastname: user.lastname,
+        email: user.email,
+      };
+      return sanitizeUser;
+    } catch (error) {
+      throw new HttpException(error.message, error.status);
+    }
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} auth`;
-  }
-
-  update(id: number, updateAuthDto: UpdateAuthDto) {
-    return `This action updates a #${id} auth`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} auth`;
+  async cryptPassword(password: string) {
+    try {
+      const cryptedPassword = bcrypt.hash(password, process.env.SALT_ROUNDS);
+      return cryptedPassword;
+    } catch (error) {
+      throw new HttpException(error.message, error.status);
+    }
   }
 }
