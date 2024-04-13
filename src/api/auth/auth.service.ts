@@ -8,6 +8,7 @@ import { logger } from 'src/utils/logger/logger';
 import * as bcrypt from 'bcrypt';
 import { UserService } from '../user/user.service';
 import { User } from '../user/interfaces/user.interface';
+import { sanitizeUser } from 'src/utils/functions';
 
 @Injectable()
 export class AuthService {
@@ -34,8 +35,17 @@ export class AuthService {
       }
       const payload = { email: user.email };
       const token = await this.signPayload(payload);
-      const sanitizedUser = await this.sanitizeUser(user);
+      const sanitizedUser = await sanitizeUser(user);
       return { sanitizedUser, token };
+    } catch (error) {
+      throw new HttpException(error.message, error.status);
+    }
+  }
+
+  async findByEmail(email: string) {
+    try {
+      const user = await this.userService.findByEmail(email);
+      return user;
     } catch (error) {
       throw new HttpException(error.message, error.status);
     }
@@ -46,6 +56,7 @@ export class AuthService {
       logger.info(`---AUTH.SERVICE.SIGN_PAYLOAD INIT---`);
       const token = this.jwtService.sign(payload, {
         secret: process.env.PRIVATE_KEY_DEV,
+        expiresIn: '1d',
       });
       logger.info(`---AUTH.SERVICE.SIGN_PAYLOAD SUCCESS---`);
       return token;
@@ -61,22 +72,19 @@ export class AuthService {
         secret: process.env.PRIVATE_KEY_DEV,
       });
     } catch (error) {
+      logger.error(`---AUTH.SERVICE.VERIFY_TOKEN ERROR ${error} ---`);
       throw new HttpException(error.message, error.status);
     }
   }
 
-  async sanitizeUser(user: User) {
-    try {
-      const sanitizeUser = {
-        firstname: user.firstname,
-        lastname: user.lastname,
-        email: user.email,
-      };
-      return sanitizeUser;
-    } catch (error) {
-      throw new HttpException(error.message, error.status);
-    }
-  }
+  // async validateToken(token:string)
+  // {
+  //   try {
+  //     logger.info(`---AUTH.SERVICE.VALIDATE_TOKEN INIT---`);
+  //   } catch (error) {
+
+  //   }
+  // }
 
   async cryptPassword(password: string) {
     try {

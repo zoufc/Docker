@@ -1,4 +1,9 @@
-import { Module } from '@nestjs/common';
+import {
+  MiddlewareConsumer,
+  Module,
+  NestModule,
+  RequestMethod,
+} from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -6,6 +11,9 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { UserModule } from './api/user/user.module';
 import { JwtModule } from '@nestjs/jwt';
 import { AuthModule } from './api/auth/auth.module';
+import { AuthMiddleware } from './middlewares/auth/auth.middleware';
+import { APP_GUARD } from '@nestjs/core';
+import { RolesGuard } from './api/auth/roles/roles.guard';
 
 @Module({
   imports: [
@@ -41,7 +49,7 @@ import { AuthModule } from './api/auth/auth.module';
     JwtModule.register({
       secret: process.env.PRIVATE_KEY_DEV,
       signOptions: {
-        expiresIn: '1d',
+        expiresIn: '60s',
         algorithm: 'RS256',
       },
     }),
@@ -49,6 +57,19 @@ import { AuthModule } from './api/auth/auth.module';
     AuthModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
+    },
+  ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(AuthMiddleware)
+      .exclude({ path: 'auth/login', method: RequestMethod.ALL })
+      .forRoutes({ path: '*', method: RequestMethod.ALL });
+  }
+}
