@@ -5,7 +5,7 @@ import { Payload } from './payload';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { logger } from 'src/utils/logger/logger';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 import { UserService } from '../user/user.service';
 import { User } from '../user/interfaces/user.interface';
 import { sanitizeUser } from 'src/utils/functions';

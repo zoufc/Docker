@@ -1,5 +1,5 @@
 import * as mongoose from 'mongoose';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 import { logger } from 'src/utils/logger/logger';
 import { Role } from 'src/api/auth/roles/role.enum';
 
